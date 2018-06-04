@@ -1,6 +1,9 @@
 import sys
 from pexpect import pxssh
 import pickle
+import getpass
+
+
 
 print (sys.version)
 class MyServer:
@@ -17,8 +20,8 @@ class MyServer:
         self.login = login
         self.password = password
         self.group = group
-        self.init_packages()
         self.init_iptables_rules()
+        self.init_packages()
 
     def get_hostname(self):
         return self.hostname
@@ -26,38 +29,48 @@ class MyServer:
         return self.ip
     def init_packages(self):
         s = pxssh.pxssh()
-        if not s.login(self.ip, self.login, self.password):
-            print("SSH session failed on login.")
-            print(str(s))
-        else:
-            s.sendline('rpm -qa')
-            s.prompt(600)  # match the prompt
-            #print(s.before)  # print everything before the prompt.
-            self.packages = s.before.splitlines()
-            s.logout()
-        #print (self.packages)
-        #print (len(self.packages))
-            self.packages.pop(0)
+        try:
+            if not s.login(self.ip, self.login, self.password):
+                print("SSH session failed on login.")
+                print(str(s))
+            else:
+                s.sendline('rpm -qa')
+                s.prompt(10)  # match the prompt
+                #print(s.before)  # print everything before the prompt.
+                self.packages = s.before.splitlines()
+                s.logout()
+                self.packages.pop(0)
+        except pxssh.ExceptionPxssh as e:
+            print("pxssh failed on login.")
+            print(e)
         #for p in self.packages:
         #    print(p)
     def add_package(self, package):
         s = pxssh.pxssh()
-        if not s.login(self.ip, self.login, self.password):
-            print("SSH session failed on login.")
-            print(str(s))
-        else:
-            s.sendline("yum install " + package + " -y")
-            s.prompt(600)  # match the prompt
-            s.logout()
+        try:
+            if not s.login(self.ip, self.login, self.password):
+                print("SSH session failed on login.")
+                print(str(s))
+            else:
+                s.sendline("yum install " + package + " -y")
+                s.prompt()  # match the prompt
+                s.logout()
+        except pxssh.ExceptionPxssh as e:
+            print("pxssh failed on login.")
+            print(e)
     def remove_package(self, package):
         s = pxssh.pxssh()
-        if not s.login(self.ip, self.login, self.password):
-            print("SSH session failed on login.")
-            print(str(s))
-        else:
-            s.sendline("yum remove " + package + "-y")
-            s.prompt(600)  # match the prompt
-            s.logout()
+        try:
+            if not s.login(self.ip, self.login, self.password):
+                print("SSH session failed on login.")
+                print(str(s))
+            else:
+                s.sendline("yum remove " + package + "-y")
+                s.prompt()  # match the prompt
+                s.logout()
+        except pxssh.ExceptionPxssh as e:
+            print("pxssh failed on login.")
+            print(e)
 
     def print_package(self):
         for p in self.packages:
@@ -65,19 +78,19 @@ class MyServer:
 
     def init_iptables_rules(self):
         s = pxssh.pxssh()
-        if not s.login(self.ip, self.login, self.password):
-            print("SSH session failed on login.")
-            print(str(s))
-        else:
-            s.sendline('iptables-save | egrep -e "-A OUTPUT |-A INPUT "')
-            s.prompt(600)  # match the prompt
-            # print(s.before)  # print everything before the prompt.
-            self.iptables_rules = s.before.splitlines()
-            s.logout()
-            #print (self.iptables_rules)
-            #print (len(self.iptables_rules))
-            #for p in self.iptables_rules:
-            #    print(p)
+        try:
+            if not s.login(self.ip, self.login, self.password):
+                print("SSH session failed on login.")
+                print(str(s))
+            else:
+                s.sendline('iptables-save | egrep -e "-A OUTPUT |-A INPUT "')
+                s.prompt(600)  # match the prompt
+                # print(s.before)  # print everything before the prompt.
+                self.iptables_rules = s.before.splitlines()
+                s.logout()
+        except pxssh.ExceptionPxssh as e:
+            print("pxssh failed on login.")
+            print(e)
 
     def print_iptables_rules(self):
         for p in self.iptables_rules:
@@ -85,22 +98,31 @@ class MyServer:
 
     def add_iptables_rules(self, rule):
         s = pxssh.pxssh()
-        if not s.login(self.ip, self.login, self.password):
-            print("SSH session failed on login.")
-            print(str(s))
-        else:
-            s.sendline("iptables -A "+ rule)
-            s.prompt(600)  # match the prompt
-            s.logout()
+        try:
+            if not s.login(self.ip, self.login, self.password):
+                print("SSH session failed on login.")
+                print(str(s))
+            else:
+                s.sendline("iptables -A "+ rule)
+                s.prompt(600)  # match the prompt
+                s.logout()
+        except pxssh.ExceptionPxssh as e:
+            print("pxssh failed on login.")
+            print(e)
     def remove_iptables_rules(self, rule):
         s = pxssh.pxssh()
-        if not s.login(self.ip, self.login, self.password):
-            print("SSH session failed on login.")
-            print(str(s))
-        else:
-            s.sendline("iptables -D "+ rule)
-            s.prompt(600)  # match the prompt
-            s.logout()
+        try:
+            if not s.login(self.ip, self.login, self.password):
+                print("SSH session failed on login.")
+                print(str(s))
+            else:
+                s.sendline("iptables -D "+ rule)
+                s.prompt(600)  # match the prompt
+                s.logout()
+        except pxssh.ExceptionPxssh as e:
+            print("pxssh failed on login.")
+            print(e)
+
     def present_yourself(self):
         print ("My name is " + self.hostname + ".")
         print("My ip is " + self.ip + ".")
@@ -113,8 +135,24 @@ class MyDataCenter:
     MyServers = []
     def __init__(self, MyServers):
         self.MyServers = MyServers
-
+        pass
+    def generate_report(self):
+        for p in self.MyServers:
+            p.present_yourself()
+            print('-' * 100)
     def add_server(self):
+        ip = input('Enter your ip:\n')
+        hostname = input('Enter your hostname:\n')
+        login = input('Enter your login:\n')
+        password = getpass.getpass('password:\n')
+        group = input('Enter your group:\n')
+        NewServer = MyServer(ip, hostname,login,password,group)
+        #NewServer.present_yourself()
+        self.MyServers = self.MyServers + [NewServer]
+        #self.MyServers[0].present_yourself()
+
+
+
 
 
 class MyIpTableRule:
@@ -138,8 +176,8 @@ def save_object(obj, filename):
     with open(filename, 'wb') as output:  # Overwrites any existing file.
         pickle.dump(obj, output, pickle.HIGHEST_PROTOCOL)
 
-x = MyServer("52.15.149.88","ec2-52-15-149-88.us-east-2.compute.amazonaws.com", 'root', '****SECRET*****')
-x2 = MyServer("18.221.161.250","ec2-18-221-161-250.us-east-2.compute.amazonaws.com", 'root', '****SECRET***')
+x = MyServer("52.15.149.88","ec2-52-15-149-88.us-east-2.compute.amazonaws.com", 'root', '***SECRET***')
+x2 = MyServer("18.221.161.250","ec2-18-221-161-250.us-east-2.compute.amazonaws.com", 'root', '***SECRET***')
 '''
 print (x.get_hostname())
 print (x2.get_hostname())
@@ -167,18 +205,23 @@ MyServers = [x, x2]
 save_object(MyServers, 'MyServers.pkl')
 
 
-with open('MyServers.pkl', 'rb') as input:
-    MyServers2= pickle.load(input)
+with open('MyServers.pkl', 'rb') as SavedServers:
+    MyServers2= pickle.load(SavedServers)
 
-print(MyServers2[0].get_ip())
+#print(MyServers2[0].get_ip())
 
 #MyServers2[0].present_yourself()
-print(MyServers2[0].group)
-
-m  = MyDataCenter(MyServers2)
+#print(MyServers2[0].group)
+#for p in MyServers:
+#    p.present_yourself()
+#    print('-' * 100)
+m  = MyDataCenter(MyServers)
+#m.generate_report()
+m.add_server()
+m.generate_report()
 '''
 s = pxssh.pxssh()
-if not s.login(MyServers2[0].get_ip(), 'root', '***SECRET*****'):
+if not s.login(MyServers2[0].get_ip(), 'root', '***SECRET***'):
     print ("SSH session failed on login.")
     print (str(s))
 else:
