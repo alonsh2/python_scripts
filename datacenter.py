@@ -58,6 +58,7 @@ class MyServer:
         except pxssh.ExceptionPxssh as e:
             print("pxssh failed on login.")
             print(e)
+        self.init_packages()
     def remove_package(self, package):
         s = pxssh.pxssh()
         try:
@@ -65,13 +66,13 @@ class MyServer:
                 print("SSH session failed on login.")
                 print(str(s))
             else:
-                s.sendline("yum remove " + package + "-y")
+                s.sendline("yum remove " + package + " -y")
                 s.prompt()  # match the prompt
                 s.logout()
         except pxssh.ExceptionPxssh as e:
             print("pxssh failed on login.")
             print(e)
-
+        self.init_packages()
     def print_package(self):
         for p in self.packages:
             print(p)
@@ -109,6 +110,7 @@ class MyServer:
         except pxssh.ExceptionPxssh as e:
             print("pxssh failed on login.")
             print(e)
+        self.init_iptables_rules()
     def remove_iptables_rules(self, rule):
         s = pxssh.pxssh()
         try:
@@ -122,6 +124,7 @@ class MyServer:
         except pxssh.ExceptionPxssh as e:
             print("pxssh failed on login.")
             print(e)
+        self.init_iptables_rules()
 
     def present_yourself(self):
         print ("My name is " + self.hostname + ".")
@@ -129,7 +132,7 @@ class MyServer:
         print("My iptables rules configuration for INPUT and OUTPUT chains only:")
         self.print_iptables_rules()
         print("The following packages are installed within me:")
-        self.print_package()
+        #self.print_package()
 
 class MyDataCenter:
     MyServers = []
@@ -150,11 +153,49 @@ class MyDataCenter:
         #NewServer.present_yourself()
         self.MyServers = self.MyServers + [NewServer]
         #self.MyServers[0].present_yourself()
+    def remove_server(self):
+        hostnameorip = input("Please, enter the hostname or ip to remove:\n")
+        j = 0
+        for p in self.MyServers:
+            if (p.hostname == hostnameorip) or (p.ip == hostnameorip):
+                self.MyServers.pop(j)
+                break
+            j = j + 1
+#packages
+    def add_package_hostnameip(self, hostnameorip, package):
+        for p in self.MyServers:
+            if (p.hostname == hostnameorip) or (p.ip == hostnameorip):
+                p.add_package(package)
+    def remove_package_hostnameip(self, hostnameorip, package):
+        for p in self.MyServers:
+            if (p.hostname == hostnameorip) or (p.ip == hostnameorip):
+                p.remove_package(package)
+    def add_package_by_group(self, group, package):
+        for p in self.MyServers:
+            if (p.group == group ):
+                p.add_package(package)
+    def remove_package_by_group(self, group, package):
+        for p in self.MyServers:
+            if (p.group == group):
+                p.remove_package(package)
+#iptables rules
 
-
-
-
-
+    def add_iptables_rules_hostnameip(self, hostnameorip, rule):
+        for p in self.MyServers:
+            if (p.hostname == hostnameorip) or (p.ip == hostnameorip):
+                p.add_iptables_rules(rule)
+    def remove_iptables_rules_hostnameip(self, hostnameorip, rule):
+        for p in self.MyServers:
+            if (p.hostname == hostnameorip) or (p.ip == hostnameorip):
+                p.remove_iptables_rules(rule)
+    def add_iptables_rules_by_group(self, group, rule):
+        for p in self.MyServers:
+            if (p.group == group ):
+                p.add_iptables_rules(rule)
+    def remove_iptables_rules_by_group(self, group, rule):
+        for p in self.MyServers:
+            if (p.group == group):
+                p.remove_iptables_rules(rule)
 class MyIpTableRule:
     ip = ''
     port = 0
@@ -178,6 +219,7 @@ def save_object(obj, filename):
 
 x = MyServer("52.15.149.88","ec2-52-15-149-88.us-east-2.compute.amazonaws.com", 'root', '***SECRET***')
 x2 = MyServer("18.221.161.250","ec2-18-221-161-250.us-east-2.compute.amazonaws.com", 'root', '***SECRET***')
+
 '''
 print (x.get_hostname())
 print (x2.get_hostname())
@@ -208,33 +250,20 @@ save_object(MyServers, 'MyServers.pkl')
 with open('MyServers.pkl', 'rb') as SavedServers:
     MyServers2= pickle.load(SavedServers)
 
-#print(MyServers2[0].get_ip())
-
-#MyServers2[0].present_yourself()
-#print(MyServers2[0].group)
-#for p in MyServers:
-#    p.present_yourself()
-#    print('-' * 100)
 m  = MyDataCenter(MyServers)
-#m.generate_report()
-m.add_server()
+#m.add_server()
+#m.remove_package_by_group("default", "screen")
+m.remove_iptables_rules_by_group("default","INPUT -i eth0 -p tcp --dport 441 -j DROP")
+m.remove_iptables_rules_by_group("default","INPUT -i eth0 -p tcp --dport 441 -j DROP")
+m.remove_iptables_rules_hostnameip("52.15.149.88","INPUT -i eth0 -p tcp --dport 441 -j DROP")
 m.generate_report()
-'''
-s = pxssh.pxssh()
-if not s.login(MyServers2[0].get_ip(), 'root', '***SECRET***'):
-    print ("SSH session failed on login.")
-    print (str(s))
-else:
-    print ("SSH session login successful")
-    s.sendline('uptime')
-    s.prompt()  # match the prompt
-    print (s.before) # print everything before the prompt.
-    s.sendline('yum info tmux')
-    s.prompt()  # match the prompt
-    print (s.before) # print everything before the prompt.
-    s.sendline('rpm -qa')
-    s.prompt()  # match the prompt
-    print (s.before) # print everything before the prompt.
-    s.logout()
+m.add_iptables_rules_hostnameip("52.15.149.88","INPUT -i eth0 -p tcp --dport 441 -j DROP")
+#m.add_package_hostnameip("52.15.149.88","screen")
+#m.remove_package_hostnameip("52.15.149.88","screen")
+#m.add_package_by_group("default", "screen")
+#m.remove_server()
+m.generate_report()
 
-'''
+m.add_iptables_rules_by_group("default","INPUT -i eth0 -p tcp --dport 441 -j DROP")
+
+m.generate_report()
